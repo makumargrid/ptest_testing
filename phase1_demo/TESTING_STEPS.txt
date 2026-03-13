@@ -1,0 +1,118 @@
+PHASE 1 CHANGE GUARD - STEP BY STEP TESTING GUIDE
+==================================================
+
+0) Prerequisites
+----------------
+You need:
+- Python virtual environment already created at .venv
+- Project path:
+  /Users/makumar/Documents/ptest_automation/implementation/AI_Security_Analyzer
+
+
+1) Go to project folder
+-----------------------
+cd /Users/makumar/Documents/ptest_automation/implementation/AI_Security_Analyzer
+
+
+2) Quick sanity check (CLI commands available)
+----------------------------------------------
+.venv/bin/python source_code/main_security_scan_entrypoint.py change-guard --help
+.venv/bin/python source_code/main_security_scan_entrypoint.py change-guard-event --help
+.venv/bin/python source_code/main_security_scan_entrypoint.py serve-change-guard-webhook --help
+
+
+3) Run direct PR-diff Phase 1 demo (offline, fastest)
+------------------------------------------------------
+.venv/bin/python source_code/main_security_scan_entrypoint.py change-guard \
+  --diff-file test_files/phase1_demo/diffs/pr_with_secrets_and_patterns.diff \
+  --no-semgrep \
+  --output-dir /tmp/change-guard-demo
+
+Expected:
+- Decision should be BLOCK
+- Review files should be created:
+  /tmp/change-guard-demo/change_guard_review.md
+  /tmp/change-guard-demo/change_guard_review.json
+
+
+4) Open generated review output
+-------------------------------
+cat /tmp/change-guard-demo/change_guard_review.md
+
+You should see:
+- Decision summary
+- Secret findings
+- Risky pattern findings
+- Suggested patch lines
+
+
+5) Test webhook payload simulation (no live webhook needed)
+-----------------------------------------------------------
+.venv/bin/python source_code/main_security_scan_entrypoint.py change-guard-event \
+  --provider github \
+  --payload-file test_files/phase1_demo/payloads/github_pull_request_opened.json \
+  --diff-file test_files/phase1_demo/diffs/pr_with_secrets_and_patterns.diff \
+  --no-semgrep \
+  --output-dir /tmp/change-guard-event-demo
+
+Expected:
+- "Webhook Decision: BLOCK"
+- Review file:
+  /tmp/change-guard-event-demo/change_guard_review.md
+
+
+6) Test with policy + known secret suppression (MCP-style adapters)
+-------------------------------------------------------------------
+.venv/bin/python source_code/main_security_scan_entrypoint.py change-guard \
+  --diff-file test_files/phase1_demo/diffs/pr_with_secrets_and_patterns.diff \
+  --no-semgrep \
+  --known-secret-hashes-file test_files/phase1_demo/config/known_secret_hashes.example.txt \
+  --policy-rules-file test_files/phase1_demo/config/policy_rules.example.json \
+  --output-dir /tmp/change-guard-policy-demo
+
+Expected:
+- Command runs successfully
+- "Suppressed (vault/policy)" values are shown in output
+
+
+7) Optional: run full tests before demo
+---------------------------------------
+.venv/bin/pytest -q
+
+Expected:
+- All tests pass
+
+
+8) Optional: run local webhook server for live trigger demo
+-----------------------------------------------------------
+Terminal A:
+.venv/bin/python source_code/main_security_scan_entrypoint.py serve-change-guard-webhook \
+  --host 127.0.0.1 \
+  --port 8787 \
+  --no-semgrep \
+  --output-dir /tmp/change-guard-live-webhook
+
+Terminal B:
+curl -X POST http://127.0.0.1:8787/webhook \
+  -H "Content-Type: application/json" \
+  -H "X-GitHub-Event: pull_request" \
+  --data @test_files/phase1_demo/payloads/github_pull_request_opened.json
+
+Note:
+- For this live server flow, if no repo mapping/diff URL access is configured, use Step 5 for guaranteed offline demo.
+
+
+9) Placeholder files to edit for your real environment
+------------------------------------------------------
+- test_files/phase1_demo/config/.env.phase1.example
+- test_files/phase1_demo/config/repo_mapping.example.json
+- test_files/phase1_demo/config/known_secret_hashes.example.txt
+- test_files/phase1_demo/config/policy_rules.example.json
+
+
+10) Demo sequence recommendation (tomorrow)
+-------------------------------------------
+1. Run Step 3 (direct diff) and show BLOCK decision.
+2. Open review markdown from Step 4 and explain findings/suggestions.
+3. Run Step 5 (webhook event simulation) to show architecture alignment.
+4. Optionally run Step 6 to show policy/vault suppression capability.
