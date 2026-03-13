@@ -1,0 +1,14 @@
+{
+  "object_kind": "merge_request",
+  "event_type": "merge_request",
+  "project": {
+    "path_with_namespace": "acme/vuln-demo"
+  },
+  "object_attributes": {
+    "action": "open",
+    "iid": 42,
+    "target_branch": "main",
+    "source_branch": "feature/security-fix",
+    "url": "https://gitlab.example.com/acme/vuln-demo/-/merge_requests/42"
+  }
+}
