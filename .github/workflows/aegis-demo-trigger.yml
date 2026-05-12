@@ -1,0 +1,68 @@
+name: "🔐 AEGIS Security Demo Trigger"
+
+on:
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: "Security scenario to scan"
+        required: true
+        default: "🔐 Auth Bypass + SQL Injection (PR #16)"
+        type: choice
+        options:
+          - "🔐 Auth Bypass + SQL Injection (PR #16)"
+          - "💀 Prod Secrets + RCE (PR #17)"
+          - "☠️ Log4Shell CVE-2021-44228 (PR #14)"
+          - "💉 SQL Injection + Hardcoded Keys (PR #13)"
+          - "🔓 XSS + Command Injection (PR #15)"
+
+jobs:
+  trigger-aegis:
+    name: "Trigger AEGIS scan"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Map scenario to branch
+        id: map
+        run: |
+          SCENARIO="${{ inputs.scenario }}"
+          if   echo "$SCENARIO" | grep -q "PR #16"; then BRANCH="demo/critical-auth-bypass"
+          elif echo "$SCENARIO" | grep -q "PR #17"; then BRANCH="demo/secrets-in-code-rce"
+          elif echo "$SCENARIO" | grep -q "PR #14"; then BRANCH="vuln/log4shell-rce"
+          elif echo "$SCENARIO" | grep -q "PR #13"; then BRANCH="vuln/sql-injection-hardcoded-secrets"
+          elif echo "$SCENARIO" | grep -q "PR #15"; then BRANCH="vuln/xss-command-injection"
+          else BRANCH="demo/critical-auth-bypass"; fi
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "Targeting branch: $BRANCH"
+
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.map.outputs.branch }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit trigger file → fires AEGIS webhook
+        run: |
+          git config user.email "aegis-demo@griddynamics.com"
+          git config user.name  "AEGIS Security Scanner"
+          mkdir -p .aegis
+          cat > .aegis/SCAN_TRIGGER.md << EOF
+          # AEGIS Security Scan
+
+          **Scenario**: ${{ inputs.scenario }}
+          **Triggered at**: $(date -u "+%Y-%m-%d %H:%M:%S UTC")
+          **Triggered by**: ${{ github.actor }}
+          **Run ID**: ${{ github.run_id }}
+
+          Scan in progress — check the AEGIS console for live results.
+          EOF
+          git add .aegis/SCAN_TRIGGER.md
+          git commit -m "chore(aegis): trigger security scan [$(date -u '+%H:%M UTC')]"
+          git push
+          echo ""
+          echo "✅ Commit pushed — AEGIS pipeline now scanning:"
+          echo "   Branch  : ${{ steps.map.outputs.branch }}"
+          echo "   Scenario: ${{ inputs.scenario }}"
+          echo ""
+          echo "   Watch live at: http://35.188.120.78:8050"
