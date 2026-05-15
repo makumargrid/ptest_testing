@@ -1,0 +1,13 @@
+{
+  "ignored_paths": [
+    "tests/**",
+    "docs/**"
+  ],
+  "ignored_rule_ids": [
+    "cg-insecure-crypto"
+  ],
+  "severity_overrides": {
+    "cg-xss-innerhtml": "MEDIUM",
+    "semgrep:python.flask.security.injection.tainted-sql-string.tainted-sql-string": "HIGH"
+  }
+}
