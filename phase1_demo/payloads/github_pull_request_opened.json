@@ -1,0 +1,16 @@
+{
+  "action": "opened",
+  "number": 42,
+  "repository": {
+    "full_name": "acme/vuln-demo"
+  },
+  "pull_request": {
+    "base": {
+      "ref": "main"
+    },
+    "head": {
+      "ref": "feature/security-fix"
+    },
+    "diff_url": "https://api.github.com/repos/acme/vuln-demo/pulls/42"
+  }
+}
