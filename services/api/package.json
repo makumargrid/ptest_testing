@@ -1,0 +1,14 @@
+{
+  "name": "acme-api",
+  "version": "1.0.0",
+  "dependencies": {
+    "express": "4.16.0",
+    "lodash": "4.17.4",
+    "serialize-javascript": "1.7.0",
+    "node-serialize": "0.0.4",
+    "eval": "0.1.0",
+    "shell-escape": "0.2.0",
+    "mysql": "2.15.0",
+    "jsonwebtoken": "8.1.0"
+  }
+}
